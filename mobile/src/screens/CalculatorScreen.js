@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput } from 'react-native';
 import { calculateBasic, formatNumber, solveQuadratic, formatQuadraticResult, squareRoot, power, log10, naturalLog, trig, factorial } from '../utils/math';
+import { fetchHistory, saveHistoryEntry, clearHistory } from '../services/api';
+import HistoryPanel from '../components/HistoryPanel';
 
 
 const BASIC_BUTTONS = [
@@ -39,6 +41,9 @@ export default function CalculatorScreen() {
     const [waitingForSecondOperand, setWaitingForSecondOperand] = useState(false);
     const [pendingFunction, setPendingFunction] = useState(null);
     const [pendingConstant, setPendingConstant] = useState(null);
+    const [showHistory, setShowHistory] = useState(false);
+    const [history, setHistory] = useState([]);
+
     // Which screen is being shown
     const [mode, setMode] = useState('basic')
 
@@ -47,6 +52,25 @@ export default function CalculatorScreen() {
     const [quadB, setQuadB] = useState('');
     const [quadC, setQuadC] = useState('');
     const [quadResult, setQuadResult] = useState(null);
+
+    useEffect(() => {
+      loadHistory();
+    }, []);
+
+    async function loadHistory() {
+      const data = await fetchHistory();
+      setHistory(data);
+    }
+
+    async function logCalculation(expressionText, resultText, type = 'basic') {
+      const entry = await saveHistoryEntry({ expression: expressionText, result: resultText, type });
+      if (entry) setHistory((prev) => [entry, ...prev]);
+    }
+
+    async function handleClearHistory() {
+      await clearHistory();
+      setHistory([]);
+    }
 
     function handleBasicPress(label) {
         if (/[0-9]/.test(label)) return inputDigit(label);
@@ -68,6 +92,7 @@ export default function CalculatorScreen() {
             const result = solveQuadratic(quadA, quadB, quadC);
             const formatted = formatQuadraticResult(result);
             setQuadResult(formatted);
+            logCalculation(completedExpression, formatNumber(result), 'scientific');
         } catch (err) {
             setQuadResult(err.message);
         }
@@ -142,6 +167,7 @@ export default function CalculatorScreen() {
            setDisplay(formatNumber(result));
            setExpression(`${completedExpression} =`);
            setAnswer(formatNumber(result));
+           logCalculation(completedExpression, formatNumber(result), 'scientific');
         } catch (err) {
            console.log('SCIENTIFIC ERROR:', err.message);
            setDisplay('Error');
@@ -178,6 +204,7 @@ export default function CalculatorScreen() {
         setDisplay(formatNumber(result));
         setExpression(`${completedExpression} =`);
         setAnswer(formatNumber(result));
+        logCalculation(completedExpression, formatNumber(result), 'scientific');
       } catch (err) {
         console.log('SCIENTIFIC ERROR:', err.message)
         setDisplay('Error');
@@ -194,6 +221,7 @@ export default function CalculatorScreen() {
       setDisplay(formatNumber(result));
       setExpression((prev) => `${prev} =`);
       setAnswer(formatNumber(result));
+      logCalculation(completedExpression, formatNumber(result), 'scientific');
       setPendingConstant(null);
     }
 
@@ -212,6 +240,9 @@ export default function CalculatorScreen() {
 
     return (
   <SafeAreaView style={styles.safeArea}>
+    <TouchableOpacity onPress={() => setShowHistory(true)} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
+      <Text style={styles.topBarLink}>History</Text>
+    </TouchableOpacity>
     <View style={styles.topBar}>
       {['basic', 'scientific', 'quadratic'].map((m) => (
         <TouchableOpacity key={m} onPress={() => setMode(m)} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }} style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
@@ -281,6 +312,13 @@ export default function CalculatorScreen() {
         </View>
       </>
     )}
+    <Modal visible={showHistory} animationType="slide">
+      <HistoryPanel
+        history={history}
+        onClose={() => setShowHistory(false)}
+        onClear={handleClearHistory}
+      />
+    </Modal>
   </SafeAreaView>
 );
 
@@ -384,6 +422,7 @@ function handleOperator(nextOperator) {
       setDisplay(formatNumber(result));
       setExpression(`${completedExpression} =`);
       setAnswer(formatNumber(result));
+      logCalculation(completedExpression, formatNumber(result));
       setFirstOperand(null);
       setOperator(null);
       setWaitingForSecondOperand(true);
@@ -513,6 +552,10 @@ const styles = StyleSheet.create({
   },
   operatorText: {
     color: '#fff',
+  },
+  topBarLink: {
+    color: '#ff9500',
+    fontSize: 16,
   },
 });
 
