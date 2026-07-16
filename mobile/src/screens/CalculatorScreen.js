@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput, Modal } from 'react-native';
 import { calculateBasic, formatNumber, solveQuadratic, formatQuadraticResult, squareRoot, power, log10, naturalLog, trig, factorial } from '../utils/math';
 import { fetchHistory, saveHistoryEntry, clearHistory } from '../services/api';
 import HistoryPanel from '../components/HistoryPanel';
