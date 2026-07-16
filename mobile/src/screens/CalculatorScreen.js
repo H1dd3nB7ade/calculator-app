@@ -92,7 +92,7 @@ export default function CalculatorScreen() {
             const result = solveQuadratic(quadA, quadB, quadC);
             const formatted = formatQuadraticResult(result);
             setQuadResult(formatted);
-            logCalculation(completedExpression, formatNumber(result), 'scientific');
+            logCalculation(`${quadA}x² + ${quadB}x + ${quadC} = 0`, formatted, 'quadratic');
         } catch (err) {
             setQuadResult(err.message);
         }
